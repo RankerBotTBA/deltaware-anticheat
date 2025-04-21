@@ -7,9 +7,9 @@ local Window = Rayfield:CreateWindow({
     ConfigurationSaving = {
         Enabled = true,
         FolderName = nil,
-        FileName = "DeltaWare Hub"
+        FileName = "Walkspeed Script"
     },
-      KeySystem = fa,
+      KeySystem = true,
         KeySettings = {
             Title = "Deltaware Hub",
             Subtitle = "Key System",
@@ -211,7 +211,7 @@ Tab3:CreateToggle({
                     if not distanceLabel then
                         distanceLabel = Instance.new("BillboardGui", player.Character)
                         distanceLabel.Name = "StudsLabel"
-                        distanceLabel.Size = UDim2.new(0, 200, 0, 50)
+                        distanceLabel.Size = UDim2.new(0, 100, 0, 25)
                         distanceLabel.StudsOffset = Vector3.new(0, 3, 0)
                         distanceLabel.AlwaysOnTop = true
 
@@ -255,8 +255,8 @@ Tab3:CreateToggle({
                     if not billboard then
                         billboard = Instance.new("BillboardGui", player.Character)
                         billboard.Name = "NameBillboard"
-                        billboard.Size = UDim2.new(0, 200, 0, 50)
-                        billboard.StudsOffset = Vector3.new(0, 3, 0)
+                        billboard.Size = UDim2.new(0, 180, 0, 45)
+                        billboard.StudsOffset = Vector3.new(0, 9, 0)
                         billboard.AlwaysOnTop = true
 
                         local textLabel = Instance.new("TextLabel", billboard)
