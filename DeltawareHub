@@ -1,70 +1,102 @@
 -- Load Rayfield Library
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
--- Discord Webhook for Key System
-local webhookURL = "https://discord.com/api/webhooks/1363878374774280222/tKoSlstGQ7A1zjcPT8Ochef8cxT0ynzN5sNiuy0sJ3MJNgCSltXoPsPJjCcwAde-IcCr"
+-- Automatically copy Discord link to clipboard
+local discordLink = "https://discord.gg/2jWHSf6j"
+setclipboard(discordLink)
 
--- Function to generate a random key
-local function generateKey()
-    local charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
-    local key = ""
-    for i = 1, 16 do
-        local randomIndex = math.random(1, #charset)
-        key = key .. charset:sub(randomIndex, randomIndex)
+-- Notify the player that the Discord link has been copied
+Rayfield:Notify({
+    Title = "Discord Link Copied!",
+    Content = "The Discord link has been copied to your clipboard. Paste it in your browser.",
+    Duration = 7.5, -- Notification duration in seconds
+    Image = 13289068631, -- Optional: Add an image ID for the notification
+    Actions = { -- Optional: Add actions to the notification
+        Dismiss = {
+            Name = "Dismiss",
+            Callback = function()
+                print("Notification dismissed.")
+            end,
+        },
+    },
+})
+
+
+
+-- Owner Information
+local ownerName = "GatesWilliam76" -- Replace with the owner's username
+local ownerUserId = 7486641863 -- Replace with the owner's UserId
+
+-- Whitelist Table
+local whitelist = {
+    "GatesWilliam76",
+    "vincentnairetre",
+    "lepompierdemarseille"
+}
+
+-- Function to check if a player is whitelisted
+local function isWhitelisted(playerName)
+    for _, name in pairs(whitelist) do
+        if name == playerName then
+            return true
+        end
     end
-    return key
+    return false
 end
 
--- Function to send key to Discord Webhook
-local function sendKeyToWebhook(key, playerName)
-    local data = {
-        ["content"] = "New Key Generated for **" .. playerName .. "**: " .. key,
-        ["username"] = "Deltaware Key System"
-    }
-    local jsonData = game:GetService("HttpService"):JSONEncode(data)
-    local headers = {
-        ["Content-Type"] = "application/json"
-    }
-    request = http_request or request or HttpPost or syn.request
-    request({
-        Url = webhookURL,
-        Method = "POST",
-        Headers = headers,
-        Body = jsonData
+-- Function to check if the player is the owner
+local function isOwner(player)
+    return player.Name == ownerName and player.UserId == ownerUserId
+end
+
+-- Function to add a player to the whitelist
+local function addToWhitelist(playerName)
+    table.insert(whitelist, playerName)
+    Rayfield:Notify({
+        Title = "Whitelist Updated",
+        Content = playerName .. " has been added to the whitelist.",
+        Duration = 5,
     })
 end
 
--- Generate and send a key
-local playerName = game.Players.LocalPlayer.Name
-local generatedKey = generateKey()
-sendKeyToWebhook(generatedKey, playerName)
-
--- Key System Validation
-local function validateKey(inputKey)
-    if inputKey ~= generatedKey then
-        game.Players.LocalPlayer:Kick("Do not use anyone's key. Use your OWN key.")
+-- Function to remove a player from the whitelist
+local function removeFromWhitelist(playerName)
+    for i, name in pairs(whitelist) do
+        if name == playerName then
+            table.remove(whitelist, i)
+            Rayfield:Notify({
+                Title = "Whitelist Updated",
+                Content = playerName .. " has been removed from the whitelist.",
+                Duration = 5,
+            })
+            return
+        end
     end
-    return inputKey == generatedKey
+    Rayfield:Notify({
+        Title = "Error",
+        Content = playerName .. " is not in the whitelist.",
+        Duration = 5,
+    })
 end
 
 -- Create Rayfield Window
 local Window = Rayfield:CreateWindow({
     Name = "Deltaware Hub",
-    LoadingTitle = "Loading...",
-    LoadingSubtitle = "by Deltaware Anti-Cheat",
+    LoadingTitle = "Loading, please wait...",
+    LoadingSubtitle = "by Deltaware",
     ConfigurationSaving = {
         Enabled = true,
         FolderName = nil,
         FileName = "DeltawareHub"
     },
-    KeySystem = true,
+    KeySystem = not isWhitelisted(game.Players.LocalPlayer.Name), -- Disable key system for whitelisted players
     KeySettings = {
         Title = "Deltaware Hub",
         Subtitle = "Key System",
-        Note = "Key is in the Discord server.",
+        Note = "Key is in the Discord. Link already copied in your clipboard. Paste it in your browser.",
         SaveKey = true,
         GrabKeyFromSite = false,
-        Key = generatedKey
+        Key = "YourGeneratedKeyHere"
     }
 })
 
@@ -73,6 +105,45 @@ local Tab1 = Window:CreateTab("Player", 4483362458)
 local Tab2 = Window:CreateTab("Utilities", 4483362458)
 local Tab3 = Window:CreateTab("ESP", 4483362458)
 local Tab4 = Window:CreateTab("Misc", 4483362458)
+
+-- Owner-Only Whitelist Management Tab
+if isOwner(game.Players.LocalPlayer) then
+    local OwnerTab = Window:CreateTab("Whitelist Management", 4483362458)
+
+    -- Add to Whitelist Input
+    OwnerTab:CreateInput({
+        Name = "Add to Whitelist",
+        PlaceholderText = "Enter Player Name",
+        RemoveTextAfterFocusLost = true,
+        Callback = function(playerName)
+            addToWhitelist(playerName)
+        end,
+    })
+
+    -- Remove from Whitelist Input
+    OwnerTab:CreateInput({
+        Name = "Remove from Whitelist",
+        PlaceholderText = "Enter Player Name",
+        RemoveTextAfterFocusLost = true,
+        Callback = function(playerName)
+            removeFromWhitelist(playerName)
+        end,
+    })
+
+    -- Display Current Whitelist
+    OwnerTab:CreateButton({
+        Name = "Show Whitelist",
+        Callback = function()
+            local whitelistString = table.concat(whitelist, ", ")
+            Rayfield:Notify({
+                Title = "Current Whitelist",
+                Content = whitelistString,
+                Duration = 10,
+            })
+        end,
+    })
+end
+
 
 -- Function to reapply settings after respawn
 local function reapplySettings()
@@ -91,7 +162,7 @@ game.Players.LocalPlayer.CharacterAdded:Connect(reapplySettings)
 -- WalkSpeed Slider
 Tab1:CreateSlider({
     Name = "Walkspeed",
-    Range = {16, 250},
+    Range = {16, 500},
     Increment = 1,
     Suffix = "Speed",
     CurrentValue = 16,
@@ -103,7 +174,7 @@ Tab1:CreateSlider({
 -- JumpPower Slider
 Tab1:CreateSlider({
     Name = "JumpPower",
-    Range = {50, 300},
+    Range = {50, 500},
     Increment = 1,
     Suffix = "Power",
     CurrentValue = 50,
@@ -122,7 +193,7 @@ local spinConnection -- Store the spinning connection
 -- SPIN SPEED SLIDER
 Tab1:CreateSlider({
     Name = "Spin Speed",
-    Range = {10, 300},
+    Range = {1, 500},
     Increment = 1,
     Suffix = "Speed",
     CurrentValue = spinSpeed,
@@ -191,7 +262,7 @@ local espSettings = {
     Boxes = false,
     Studs = false,
     Name = false,
-    Color = Color3.new(1, 0, 0), -- Default red color
+    Color = Color3.new(255, 255, 255),
 }
 
 -- CHAMS TOGGLE
