@@ -1,5 +1,53 @@
+-- Load Rayfield Library
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
+-- Discord Webhook for Key System
+local webhookURL = "https://discord.com/api/webhooks/1363878374774280222/tKoSlstGQ7A1zjcPT8Ochef8cxT0ynzN5sNiuy0sJ3MJNgCSltXoPsPJjCcwAde-IcCr"
+
+-- Function to generate a random key
+local function generateKey()
+    local charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+    local key = ""
+    for i = 1, 16 do
+        local randomIndex = math.random(1, #charset)
+        key = key .. charset:sub(randomIndex, randomIndex)
+    end
+    return key
+end
+
+-- Function to send key to Discord Webhook
+local function sendKeyToWebhook(key, playerName)
+    local data = {
+        ["content"] = "New Key Generated for **" .. playerName .. "**: " .. key,
+        ["username"] = "Deltaware Key System"
+    }
+    local jsonData = game:GetService("HttpService"):JSONEncode(data)
+    local headers = {
+        ["Content-Type"] = "application/json"
+    }
+    request = http_request or request or HttpPost or syn.request
+    request({
+        Url = webhookURL,
+        Method = "POST",
+        Headers = headers,
+        Body = jsonData
+    })
+end
+
+-- Generate and send a key
+local playerName = game.Players.LocalPlayer.Name
+local generatedKey = generateKey()
+sendKeyToWebhook(generatedKey, playerName)
+
+-- Key System Validation
+local function validateKey(inputKey)
+    if inputKey ~= generatedKey then
+        game.Players.LocalPlayer:Kick("Do not use anyone's key. Use your OWN key.")
+    end
+    return inputKey == generatedKey
+end
+
+-- Create Rayfield Window
 local Window = Rayfield:CreateWindow({
     Name = "Deltaware Hub",
     LoadingTitle = "Loading...",
@@ -7,28 +55,40 @@ local Window = Rayfield:CreateWindow({
     ConfigurationSaving = {
         Enabled = true,
         FolderName = nil,
-        FileName = "Walkspeed Script"
+        FileName = "DeltawareHub"
     },
-      KeySystem = true,
-        KeySettings = {
-            Title = "Deltaware Hub",
-            Subtitle = "Key System",
-            Note = "Key is in the discord server.",
-            SaveKey = true,
-            GrabKeyFromSite = false,
-            Key = "Key_164e0b8c1d3f2a5f7"
-        }
+    KeySystem = true,
+    KeySettings = {
+        Title = "Deltaware Hub",
+        Subtitle = "Key System",
+        Note = "Key is in the Discord server.",
+        SaveKey = true,
+        GrabKeyFromSite = false,
+        Key = generatedKey
+    }
 })
 
+-- Tabs
 local Tab1 = Window:CreateTab("Player", 4483362458)
 local Tab2 = Window:CreateTab("Utilities", 4483362458)
 local Tab3 = Window:CreateTab("ESP", 4483362458)
 local Tab4 = Window:CreateTab("Misc", 4483362458)
 
+-- Function to reapply settings after respawn
+local function reapplySettings()
+    local player = game.Players.LocalPlayer
+    local character = player.Character or player.CharacterAdded:Wait()
+    local humanoid = character:WaitForChild("Humanoid")
 
+    -- Reapply WalkSpeed and JumpPower
+    humanoid.WalkSpeed = 16
+    humanoid.JumpPower = 50
+end
 
--- WALKSPEED SCRIPT
+-- Reapply settings on respawn
+game.Players.LocalPlayer.CharacterAdded:Connect(reapplySettings)
 
+-- WalkSpeed Slider
 Tab1:CreateSlider({
     Name = "Walkspeed",
     Range = {16, 250},
@@ -40,11 +100,10 @@ Tab1:CreateSlider({
     end,
 })
 
--- JUMPPOWER SCRIPT
-
+-- JumpPower Slider
 Tab1:CreateSlider({
     Name = "JumpPower",
-    Range = {50, 250},
+    Range = {50, 300},
     Increment = 1,
     Suffix = "Power",
     CurrentValue = 50,
@@ -52,6 +111,7 @@ Tab1:CreateSlider({
         game.Players.LocalPlayer.Character.Humanoid.JumpPower = Value
     end,
 })
+
 
 -- SPIN SCRIPT
 
@@ -72,6 +132,7 @@ Tab1:CreateSlider({
 })
 
 -- SPIN TOGGLE
+
 Tab1:CreateToggle({
     Name = "Spin",
     CurrentValue = false,
@@ -100,8 +161,6 @@ Tab1:CreateToggle({
     end,
 })
 
-
-
 -- XRAY SCRIPT
 
 local function xray(enable)
@@ -124,7 +183,6 @@ local XrayToggle = Tab2:CreateToggle({
         xray(Value) -- Call the xray function with the toggle value
     end
 })
-
 
 
 -- ESP SETTINGS
