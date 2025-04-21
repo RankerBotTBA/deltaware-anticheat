@@ -1,0 +1,397 @@
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Window = Rayfield:CreateWindow({
+    Name = "Deltaware Hub",
+    LoadingTitle = "Loading...",
+    LoadingSubtitle = "by Deltaware Anti-Cheat",
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = nil,
+        FileName = "DeltaWare Hub"
+    },
+      KeySystem = fa,
+        KeySettings = {
+            Title = "Deltaware Hub",
+            Subtitle = "Key System",
+            Note = "Key is in the discord server.",
+            SaveKey = true,
+            GrabKeyFromSite = false,
+            Key = "Key_164e0b8c1d3f2a5f7"
+        }
+})
+
+local Tab1 = Window:CreateTab("Player", 4483362458)
+local Tab2 = Window:CreateTab("Utilities", 4483362458)
+local Tab3 = Window:CreateTab("ESP", 4483362458)
+local Tab4 = Window:CreateTab("Misc", 4483362458)
+
+
+
+-- WALKSPEED SCRIPT
+
+Tab1:CreateSlider({
+    Name = "Walkspeed",
+    Range = {16, 250},
+    Increment = 1,
+    Suffix = "Speed",
+    CurrentValue = 16,
+    Callback = function(Value)
+        game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = Value
+    end,
+})
+
+-- JUMPPOWER SCRIPT
+
+Tab1:CreateSlider({
+    Name = "JumpPower",
+    Range = {50, 250},
+    Increment = 1,
+    Suffix = "Power",
+    CurrentValue = 50,
+    Callback = function(Value)
+        game.Players.LocalPlayer.Character.Humanoid.JumpPower = Value
+    end,
+})
+
+-- SPIN SCRIPT
+
+local spinning = false -- Track spinning state
+local spinSpeed = 50 -- Default spinning speed
+local spinConnection -- Store the spinning connection
+
+-- SPIN SPEED SLIDER
+Tab1:CreateSlider({
+    Name = "Spin Speed",
+    Range = {10, 300},
+    Increment = 1,
+    Suffix = "Speed",
+    CurrentValue = spinSpeed,
+    Callback = function(Value)
+        spinSpeed = Value -- Update the spinning speed
+    end,
+})
+
+-- SPIN TOGGLE
+Tab1:CreateToggle({
+    Name = "Spin",
+    CurrentValue = false,
+    Flag = "SpinToggle",
+    Callback = function(Value)
+        local player = game.Players.LocalPlayer
+        local character = player.Character or player.CharacterAdded:Wait()
+        local rootPart = character:WaitForChild("HumanoidRootPart")
+
+        if Value then
+            -- Start spinning
+            spinning = true
+            spinConnection = game:GetService("RunService").RenderStepped:Connect(function()
+                if spinning then
+                    rootPart.CFrame = rootPart.CFrame * CFrame.Angles(0, math.rad(spinSpeed), 0)
+                end
+            end)
+        else
+            -- Stop spinning
+            spinning = false
+            if spinConnection then
+                spinConnection:Disconnect()
+                spinConnection = nil
+            end
+        end
+    end,
+})
+
+
+
+-- XRAY SCRIPT
+
+local function xray(enable)
+    for _, part in pairs(workspace:GetDescendants()) do
+        if part:IsA("BasePart") and not part.Parent:FindFirstAncestorWhichIsA("Humanoid") and not part.Parent.Parent:FindFirstAncestorWhichIsA("Humanoid") then
+            part.LocalTransparencyModifier = enable and 0.5 or 0
+        end
+    end
+end
+
+
+
+-- XRAY TOGGLE
+
+local XrayToggle = Tab2:CreateToggle({
+    Name = "Xray",
+    CurrentValue = false,
+    Flag = "XrayToggle",
+    Callback = function(Value)
+        xray(Value) -- Call the xray function with the toggle value
+    end
+})
+
+
+
+-- ESP SETTINGS
+local espSettings = {
+    Chams = false,
+    Boxes = false,
+    Studs = false,
+    Name = false,
+    Color = Color3.new(1, 0, 0), -- Default red color
+}
+
+-- CHAMS TOGGLE
+Tab3:CreateToggle({
+    Name = "Chams",
+    CurrentValue = false,
+    Flag = "ChamsToggle",
+    Callback = function(Value)
+        espSettings.Chams = Value
+        -- Logic for enabling/disabling Chams
+        for _, player in pairs(game.Players:GetPlayers()) do
+            if player.Character and player ~= game.Players.LocalPlayer then
+                for _, part in pairs(player.Character:GetChildren()) do
+                    if part:IsA("BasePart") then
+                        if Value then
+                            part.Material = Enum.Material.ForceField -- Enable Chams
+                            part.Color = espSettings.Color -- Apply selected color
+                        else
+                            part.Material = Enum.Material.Plastic -- Reset to default
+                        end
+                    end
+                end
+            end
+        end
+    end,
+})
+
+-- BOXES TOGGLE
+Tab3:CreateToggle({
+    Name = "Boxes",
+    CurrentValue = false,
+    Flag = "BoxesToggle",
+    Callback = function(Value)
+        espSettings.Boxes = Value
+        -- Logic for enabling/disabling Boxes
+        for _, player in pairs(game.Players:GetPlayers()) do
+            if player.Character and player ~= game.Players.LocalPlayer then
+                local box = player.Character:FindFirstChild("ESPBox")
+                if Value then
+                    if not box then
+                        box = Instance.new("BillboardGui", player.Character)
+                        box.Name = "ESPBox"
+                        box.Size = UDim2.new(4, 0, 6, 0)
+                        box.StudsOffset = Vector3.new(0, 3, 0)
+                        box.AlwaysOnTop = true
+
+                        local frame = Instance.new("Frame", box)
+                        frame.Size = UDim2.new(1, 0, 1, 0)
+                        frame.BackgroundTransparency = 1
+                        frame.BorderSizePixel = 2
+                        frame.BorderColor3 = espSettings.Color
+                    end
+                else
+                    if box then
+                        box:Destroy()
+                    end
+                end
+            end
+        end
+    end,
+})
+
+-- STUDS TOGGLE
+Tab3:CreateToggle({
+    Name = "Studs",
+    CurrentValue = false,
+    Flag = "StudsToggle",
+    Callback = function(Value)
+        espSettings.Studs = Value
+        -- Logic for enabling/disabling Studs
+        for _, player in pairs(game.Players:GetPlayers()) do
+            if player.Character and player ~= game.Players.LocalPlayer then
+                local distanceLabel = player.Character:FindFirstChild("StudsLabel")
+                if Value then
+                    if not distanceLabel then
+                        distanceLabel = Instance.new("BillboardGui", player.Character)
+                        distanceLabel.Name = "StudsLabel"
+                        distanceLabel.Size = UDim2.new(0, 200, 0, 50)
+                        distanceLabel.StudsOffset = Vector3.new(0, 3, 0)
+                        distanceLabel.AlwaysOnTop = true
+
+                        local textLabel = Instance.new("TextLabel", distanceLabel)
+                        textLabel.Size = UDim2.new(1, 0, 1, 0)
+                        textLabel.BackgroundTransparency = 1
+                        textLabel.TextColor3 = espSettings.Color
+                        textLabel.TextScaled = true
+                        textLabel.Text = "0 Studs"
+                    end
+
+                    -- Update distance dynamically
+                    game:GetService("RunService").RenderStepped:Connect(function()
+                        if distanceLabel and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                            local distance = (game.Players.LocalPlayer.Character.HumanoidRootPart.Position - player.Character.HumanoidRootPart.Position).Magnitude
+                            distanceLabel.TextLabel.Text = math.floor(distance) .. " Studs"
+                        end
+                    end)
+                else
+                    if distanceLabel then
+                        distanceLabel:Destroy()
+                    end
+                end
+            end
+        end
+    end,
+})
+
+-- NAME TOGGLE
+Tab3:CreateToggle({
+    Name = "Name",
+    CurrentValue = false,
+    Flag = "NameToggle",
+    Callback = function(Value)
+        espSettings.Name = Value
+        -- Logic for enabling/disabling Name ESP
+        for _, player in pairs(game.Players:GetPlayers()) do
+            if player.Character and player ~= game.Players.LocalPlayer then
+                local billboard = player.Character:FindFirstChild("NameBillboard")
+                if Value then
+                    if not billboard then
+                        billboard = Instance.new("BillboardGui", player.Character)
+                        billboard.Name = "NameBillboard"
+                        billboard.Size = UDim2.new(0, 200, 0, 50)
+                        billboard.StudsOffset = Vector3.new(0, 3, 0)
+                        billboard.AlwaysOnTop = true
+
+                        local textLabel = Instance.new("TextLabel", billboard)
+                        textLabel.Size = UDim2.new(1, 0, 1, 0)
+                        textLabel.BackgroundTransparency = 1
+                        textLabel.Text = player.Name
+                        textLabel.TextColor3 = espSettings.Color
+                        textLabel.TextScaled = true
+                    end
+                else
+                    if billboard then
+                        billboard:Destroy()
+                    end
+                end
+            end
+        end
+    end,
+})
+
+-- COLOR PICKER
+Tab3:CreateColorPicker({
+    Name = "ESP Color",
+    Color = espSettings.Color,
+    Flag = "ESPColorPicker",
+    Callback = function(Color)
+        espSettings.Color = Color
+        -- Update ESP color for all features
+        for _, player in pairs(game.Players:GetPlayers()) do
+            if player.Character and player ~= game.Players.LocalPlayer then
+                -- Update Chams color
+                for _, part in pairs(player.Character:GetChildren()) do
+                    if part:IsA("BasePart") and espSettings.Chams then
+                        part.Color = Color
+                    end
+                end
+
+                -- Update Name color
+                local billboard = player.Character:FindFirstChild("NameBillboard")
+                if billboard then
+                    local textLabel = billboard:FindFirstChildOfClass("TextLabel")
+                    if textLabel then
+                        textLabel.TextColor3 = Color
+                    end
+                end
+
+                -- Update Box color
+                local box = player.Character:FindFirstChild("ESPBox")
+                if box then
+                    local frame = box:FindFirstChildOfClass("Frame")
+                    if frame then
+                        frame.BorderColor3 = Color
+                    end
+                end
+
+                -- Update Studs color
+                local studsLabel = player.Character:FindFirstChild("StudsLabel")
+                if studsLabel then
+                    local textLabel = studsLabel:FindFirstChildOfClass("TextLabel")
+                    if textLabel then
+                        textLabel.TextColor3 = Color
+                    end
+                end
+            end
+        end
+    end,
+})
+
+
+
+
+-- INFINITE YIELD LOADER
+Tab4:CreateButton({
+    Name = "Infinite Yield",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()
+    end,
+})
+
+-- AK ADMIN LOADER
+Tab4:CreateButton({
+    Name = "AK Admin (Key in Discord)",
+    Callback = function()
+        loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-AK-ADMIN-34306"))()
+    end,
+})
+
+-- NAMELESS ADMIN LOADER
+Tab4:CreateButton({
+    Name = "Nameless Admin (Might make you lag)",
+    Callback = function()
+       loadstring(game:HttpGet("https://raw.githubusercontent.com/ltseverydayyou/Nameless-Admin/main/Source.lua"))()
+    end,
+})
+
+-- KRON HUB LOADER
+Tab4:CreateButton({
+    Name = "Kron Hub (Lumber Tycoon 2)",
+    Callback = function()
+        loadstring(game:HttpGet('https://raw.githubusercontent.com/DevKron/Kron_Hub/refs/heads/main/version_1.0'))("")
+    end,
+})
+
+-- BUTTER V5 LOADER
+Tab4:CreateButton({
+    Name = "Butter V5 (Lumber Tycoon 2, potentially broken - Key in Discord)",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/ButterHub/ButterV5/main/Loader.lua"))()
+    end,
+})
+
+-- DISCORD SCRIPT
+
+Tab4:CreateButton({
+    Name = "Copy Discord Link",
+    Callback = function()
+        -- The Discord link to copy
+        local discordLink = "https://discord.gg/2jWHSf6j"
+
+        -- Copy the link to the clipboard
+        setclipboard(discordLink)
+
+        -- Show a notification to the player
+        Rayfield:Notify({
+            Title = "Discord Link Copied!",
+            Content = "The Discord link has been copied to your clipboard. Paste it in your browser.",
+            Duration = 7.5, -- Notification duration in seconds
+            Image = 13289068631, -- Optional: Add an image ID for the notification
+            Actions = { -- Optional: Add actions to the notification
+                Dismiss = {
+                    Name = "Dismiss",
+                    Callback = function()
+                        print("Notification dismissed.")
+                    end,
+                },
+            },
+        })
+    end,
+})
