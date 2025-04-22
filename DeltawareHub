@@ -21,6 +21,12 @@ Rayfield:Notify({
     },
 })
 
+-- Discord Webhook for Key System
+local keyWebhookURL = "https://discord.com/api/webhooks/1363878374774280222/tKoSlstGQ7A1zjcPT8Ochef8cxT0ynzN5sNiuy0sJ3MJNgCSltXoPsPJjCcwAde-IcCr"
+
+-- Discord Webhook for Key Logging
+local logWebhookURL = "https://discord.com/api/webhooks/1363889942094286949/knb1jfpHOci6_GnRR-jFRzqU2SIKiQOhVWe_zwAIowob3H7XKQ_41p7IynTK5u6737Um"
+
 -- Function to generate a random key
 local function generateKey()
     local charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
@@ -32,10 +38,35 @@ local function generateKey()
     return key
 end
 
--- Discord Webhook for Key System
-local keyWebhookURL = "https://discord.com/api/webhooks/1363878374774280222/tKoSlstGQ7A1zjcPT8Ochef8cxT0ynzN5sNiuy0sJ3MJNgCSltXoPsPJjCcwAde-IcCr"
+-- Function to send logs to the Discord Webhook
+local function sendLogToWebhook(logMessage)
+    local data = {
+        ["content"] = logMessage,
+        ["username"] = "Key System Logs"
+    }
+    local headers = {
+        ["Content-Type"] = "application/json"
+    }
+    local request = http_request or request or HttpPost or syn.request
+    request({
+        Url = logWebhookURL, -- Use the log webhook URL
+        Method = "POST",
+        Headers = headers,
+        Body = game:GetService("HttpService"):JSONEncode(data)
+    })
+end
 
--- Function to send the generated key to the Discord Webhook
+-- Generate and send a key only once per session
+local playerName = game.Players.LocalPlayer.Name
+local playerUserId = game.Players.LocalPlayer.UserId
+local generatedKey = generateKey()
+
+-- Log the key generation
+local currentTime = os.date("%Y-%m-%d %H:%M:%S") -- Get the current time and date
+local logMessage = string.format("**Key Generated:**\n**Time:** %s\n**Player Name:** %s\n**UserId:** %d\n**Key:** %s", currentTime, playerName, playerUserId, generatedKey)
+sendLogToWebhook(logMessage)
+
+-- Send the key to the Discord webhook
 local function sendKeyToWebhook(key, playerName, playerUserId)
     local data = {
         ["content"] = "New Key Generated:\n**Player Name:** " .. playerName .. "\n**UserId:** " .. playerUserId .. "\n**Key:** " .. key,
@@ -53,18 +84,26 @@ local function sendKeyToWebhook(key, playerName, playerUserId)
     })
 end
 
--- Generate and send a key only once per session
-local playerName = game.Players.LocalPlayer.Name
-local playerUserId = game.Players.LocalPlayer.UserId
-local generatedKey = generateKey()
 sendKeyToWebhook(generatedKey, playerName, playerUserId)
 
 -- Key System Validation
 local function validateKey(inputKey)
+    local currentTime = os.date("%Y-%m-%d %H:%M:%S") -- Get the current time and date
+
     if inputKey ~= generatedKey then
+        -- Log invalid key attempts
+        local logMessage = string.format("Invalid Key Attempt:\nTime: %s\nPlayer Name: %s\nUserId: %d\nEntered Key: %s", currentTime, playerName, playerUserId, inputKey)
+        sendLogToWebhook(logMessage)
+
         game.Players.LocalPlayer:Kick("Invalid key! Please check the Discord for the correct key.")
+        return false
     end
-    return inputKey == generatedKey
+
+    -- Log successful key validation
+    local logMessage = string.format("Key Validated Successfully:\nTime: %s\nPlayer Name: %s\nUserId: %d", currentTime, playerName, playerUserId)
+    sendLogToWebhook(logMessage)
+
+    return true
 end
 
 -- Create Rayfield Window
@@ -93,6 +132,7 @@ local Tab1 = Window:CreateTab("Player", 4483362458)
 local Tab2 = Window:CreateTab("Utilities", 4483362458)
 local Tab3 = Window:CreateTab("ESP", 4483362458)
 local Tab4 = Window:CreateTab("Misc", 4483362458)
+local Tab5 = Window:CreateTab("Emotes", 4483362458)
 
 -- Function to reapply settings after respawn
 local function reapplySettings()
@@ -203,6 +243,77 @@ local XrayToggle = Tab2:CreateToggle({
         xray(Value) -- Call the xray function with the toggle value
     end
 })
+
+-- Dropdown to list all players in the server
+local selectedPlayer = nil -- Variable to store the selected player
+
+Tab2:CreateDropdown({
+    Name = "Select Player",
+    Options = {}, -- This will be populated dynamically
+    CurrentOption = nil,
+    Callback = function(Value)
+        selectedPlayer = Value -- Update the selected player
+    end,
+})
+
+-- Function to update the dropdown with the list of players
+local function updatePlayerList()
+    local playerNames = {}
+    for _, player in pairs(game.Players:GetPlayers()) do
+        table.insert(playerNames, player.Name)
+    end
+    return playerNames
+end
+
+-- Populate the dropdown with the current list of players
+Tab2:UpdateDropdown("Select Player (SOON)", {
+    Options = updatePlayerList(),
+    CurrentOption = updatePlayerList,
+})
+
+-- Button to execute the fling action
+Tab2:CreateButton({
+    Name = "EXECUTE",
+    Callback = function()
+        if not selectedPlayer then
+            Rayfield:Notify({
+                Title = "Error",
+                Content = "Please select a player first!",
+                Duration = 5,
+            })
+            return
+        end
+
+        local targetPlayer = game.Players:FindFirstChild(selectedPlayer)
+        if targetPlayer and targetPlayer.Character then
+            local rootPart = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if rootPart then
+                -- Fling logic
+                local flingConnection = game:GetService("RunService").RenderStepped:Connect(function()
+                    rootPart.CFrame = rootPart.CFrame + Vector3.new(0, 0, 10) -- Adjust the vector for fling direction
+                end)
+
+                -- Disconnect fling after a short duration (e.g., 5 seconds)
+                wait(5)
+                flingConnection:Disconnect()
+            else
+                Rayfield:Notify({
+                    Title = "Error",
+                    Content = "Target player does not have a HumanoidRootPart!",
+                    Duration = 5,
+                })
+            end
+        else
+            Rayfield:Notify({
+                Title = "Error",
+                Content = "Target player not found!",
+                Duration = 5,
+            })
+        end
+    end,
+})
+
+
 
 
 -- ESP SETTINGS
@@ -402,6 +513,52 @@ Tab3:CreateColorPicker({
     end,
 })
 
+-- Notify the player that emotes are only for R15
+Tab5:CreateLabel("Note: Emotes work only for R15 avatars.")
+
+-- List of emotes from the Roblox marketplace
+local emotes = {
+    { Name = "Wave", AnimationId = "rbxassetid://507770239" },
+    { Name = "Point", AnimationId = "rbxassetid://507770453" },
+    { Name = "Cheer", AnimationId = "rbxassetid://507770818" },
+    { Name = "Laugh", AnimationId = "rbxassetid://507771019" },
+    { Name = "Dance 1", AnimationId = "rbxassetid://507771955" },
+    { Name = "Dance 2", AnimationId = "rbxassetid://507776043" },
+    { Name = "Dance 3", AnimationId = "rbxassetid://507777268" },
+    { Name = "Salute", AnimationId = "rbxassetid://507770818" },
+    { Name = "Tilt", AnimationId = "rbxassetid://5918726674" },
+    { Name = "Shrug", AnimationId = "rbxassetid://5918726674" }
+}
+
+-- Function to play an emote
+local function playEmote(animationId)
+    local player = game.Players.LocalPlayer
+    local character = player.Character or player.CharacterAdded:Wait()
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+
+    if humanoid and humanoid.RigType == Enum.HumanoidRigType.R15 then
+        local animation = Instance.new("Animation")
+        animation.AnimationId = animationId
+        local track = humanoid:LoadAnimation(animation)
+        track:Play()
+    else
+        Rayfield:Notify({
+            Title = "Emote Error",
+            Content = "Emotes only work for R15 avatars.",
+            Duration = 5
+        })
+    end
+end
+
+-- Create buttons for each emote
+for _, emote in ipairs(emotes) do
+    Tab5:CreateButton({
+        Name = emote.Name,
+        Callback = function()
+            playEmote(emote.AnimationId)
+        end
+    })
+end
 
 
 
