@@ -21,62 +21,50 @@ Rayfield:Notify({
     },
 })
 
-
-
--- Owner Information
-local ownerName = "GatesWilliam76" -- Replace with the owner's username
-local ownerUserId = 7486641863 -- Replace with the owner's UserId
-
--- Whitelist Table
-local whitelist = {
-    "GatesWilliam76",
-    "vincentnairetre",
-    "lepompierdemarseille"
-}
-
--- Function to check if a player is whitelisted
-local function isWhitelisted(playerName)
-    for _, name in pairs(whitelist) do
-        if name == playerName then
-            return true
-        end
+-- Function to generate a random key
+local function generateKey()
+    local charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+    local key = ""
+    for i = 1, 24 do
+        local randomIndex = math.random(1, #charset)
+        key = key .. charset:sub(randomIndex, randomIndex)
     end
-    return false
+    return key
 end
 
--- Function to check if the player is the owner
-local function isOwner(player)
-    return player.Name == ownerName and player.UserId == ownerUserId
-end
+-- Discord Webhook for Key System
+local keyWebhookURL = "https://discord.com/api/webhooks/1363878374774280222/tKoSlstGQ7A1zjcPT8Ochef8cxT0ynzN5sNiuy0sJ3MJNgCSltXoPsPJjCcwAde-IcCr"
 
--- Function to add a player to the whitelist
-local function addToWhitelist(playerName)
-    table.insert(whitelist, playerName)
-    Rayfield:Notify({
-        Title = "Whitelist Updated",
-        Content = playerName .. " has been added to the whitelist.",
-        Duration = 5,
+-- Function to send the generated key to the Discord Webhook
+local function sendKeyToWebhook(key, playerName, playerUserId)
+    local data = {
+        ["content"] = "New Key Generated:\n**Player Name:** " .. playerName .. "\n**UserId:** " .. playerUserId .. "\n**Key:** " .. key,
+        ["username"] = "Key System"
+    }
+    local headers = {
+        ["Content-Type"] = "application/json"
+    }
+    local request = http_request or request or HttpPost or syn.request
+    request({
+        Url = keyWebhookURL,
+        Method = "POST",
+        Headers = headers,
+        Body = game:GetService("HttpService"):JSONEncode(data)
     })
 end
 
--- Function to remove a player from the whitelist
-local function removeFromWhitelist(playerName)
-    for i, name in pairs(whitelist) do
-        if name == playerName then
-            table.remove(whitelist, i)
-            Rayfield:Notify({
-                Title = "Whitelist Updated",
-                Content = playerName .. " has been removed from the whitelist.",
-                Duration = 5,
-            })
-            return
-        end
+-- Generate and send a key only once per session
+local playerName = game.Players.LocalPlayer.Name
+local playerUserId = game.Players.LocalPlayer.UserId
+local generatedKey = generateKey()
+sendKeyToWebhook(generatedKey, playerName, playerUserId)
+
+-- Key System Validation
+local function validateKey(inputKey)
+    if inputKey ~= generatedKey then
+        game.Players.LocalPlayer:Kick("Invalid key! Please check the Discord for the correct key.")
     end
-    Rayfield:Notify({
-        Title = "Error",
-        Content = playerName .. " is not in the whitelist.",
-        Duration = 5,
-    })
+    return inputKey == generatedKey
 end
 
 -- Create Rayfield Window
@@ -89,14 +77,14 @@ local Window = Rayfield:CreateWindow({
         FolderName = nil,
         FileName = "DeltawareHub"
     },
-    KeySystem = not isWhitelisted(game.Players.LocalPlayer.Name), -- Disable key system for whitelisted players
+    KeySystem = true, -- Enable key system
     KeySettings = {
         Title = "Deltaware Hub",
         Subtitle = "Key System",
         Note = "Key is in the Discord. Link already copied in your clipboard. Paste it in your browser.",
         SaveKey = true,
         GrabKeyFromSite = false,
-        Key = "YourGeneratedKeyHere"
+        Key = generatedKey -- Use the generated key
     }
 })
 
@@ -105,45 +93,6 @@ local Tab1 = Window:CreateTab("Player", 4483362458)
 local Tab2 = Window:CreateTab("Utilities", 4483362458)
 local Tab3 = Window:CreateTab("ESP", 4483362458)
 local Tab4 = Window:CreateTab("Misc", 4483362458)
-
--- Owner-Only Whitelist Management Tab
-if isOwner(game.Players.LocalPlayer) then
-    local OwnerTab = Window:CreateTab("Whitelist Management", 4483362458)
-
-    -- Add to Whitelist Input
-    OwnerTab:CreateInput({
-        Name = "Add to Whitelist",
-        PlaceholderText = "Enter Player Name",
-        RemoveTextAfterFocusLost = true,
-        Callback = function(playerName)
-            addToWhitelist(playerName)
-        end,
-    })
-
-    -- Remove from Whitelist Input
-    OwnerTab:CreateInput({
-        Name = "Remove from Whitelist",
-        PlaceholderText = "Enter Player Name",
-        RemoveTextAfterFocusLost = true,
-        Callback = function(playerName)
-            removeFromWhitelist(playerName)
-        end,
-    })
-
-    -- Display Current Whitelist
-    OwnerTab:CreateButton({
-        Name = "Show Whitelist",
-        Callback = function()
-            local whitelistString = table.concat(whitelist, ", ")
-            Rayfield:Notify({
-                Title = "Current Whitelist",
-                Content = whitelistString,
-                Duration = 10,
-            })
-        end,
-    })
-end
-
 
 -- Function to reapply settings after respawn
 local function reapplySettings()
@@ -490,7 +439,7 @@ Tab4:CreateButton({
 
 -- BUTTER V5 LOADER
 Tab4:CreateButton({
-    Name = "Butter V5 (Lumber Tycoon 2, potentially broken - Key in Discord)",
+    Name = "Butter V5 (Lumber Tycoon 2, potentially broken - Key in Discord soon)",
     Callback = function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/ButterHub/ButterV5/main/Loader.lua"))()
     end,
